@@ -199,17 +199,21 @@ class BookEmbeddingApp:
 
     def augment_multiple_query(self, query):
 
+        class AugmentQuery(BaseModel):
+            values: List[str] = Field(description='Lista de python con queries similares desde diferentes perpectivas')
+        
+        parser = PydanticOutputParser(pydantic_object=AugmentQuery)
+
         prompt = PromptTemplate(
             template=self.prompt_augment_queries,
-            input_variables=['questions']
+            input_variables=['questions'],
+            partial_variables={'format_instructions': parser.get_format_instructions()}
         )
 
-        output_parser = StrOutputParser()
-
-        chain = prompt | self.model | output_parser
-
+        chain = prompt | self.model  
         content = chain.invoke({'questions': query})
-        content = content.split("\n")
+
+        content = content.content.split('\n')
         # Mejorar la salida de esto 
         return content
 
@@ -223,7 +227,7 @@ class BookEmbeddingApp:
             # Realizamos una sola consulta a ChromaDB con todas las consultas.
             first_results = self.chroma_collection.query(
                 query_texts=queries,
-                n_results=10,
+                n_results=5,
                 include=['documents']
             )
 
