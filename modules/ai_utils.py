@@ -165,8 +165,6 @@ class BookEmbeddingApp:
         self.chroma_collection = chroma_client.get_or_create_collection(self.collection_name, embedding_function=embedding_function)
         
         if self.chroma_collection.count() == 0:
-            self.csv_path = csv_path
-
             self.create_or_load_df()
 
             book_docs = self.df_book["book_content"].to_list()
