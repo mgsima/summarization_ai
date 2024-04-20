@@ -1,6 +1,7 @@
 import streamlit as st
 from modules.ai_utils import TextProcessingSystem, BookEmbeddingApp
 import pandas as pd
+import logging
 
 def change_embedding_status_toggle():
     # Actualizar el estado de la sesión cuando el toggle cambie
@@ -36,9 +37,15 @@ def upload_dataframe():
     st.session_state.df_queries = pd.read_csv(st.session_state.dataframe_csv_path)
 
 def initiate_generator():
-    if "Text_Process" not in st.session_state:
-        st.session_state.Text_Process = TextProcessingSystem(markdown_file_path=st.session_state.markdown_file_path, api_key_user=st.session_state.api_key)
-
+    try:
+        logging.info(f"Initializing Text Processing System with: {st.session_state.markdown_file_path}, {st.session_state.api_key}")
+        st.session_state.Text_Process = TextProcessingSystem(
+            markdown_file_path=st.session_state.markdown_file_path, 
+            api_key_user=st.session_state.api_key
+        )
+    except Exception as e:
+        logging.error("Failed to initialize Text Processing System", exc_info=True)
+        raise e 
 def rewrite_prompt():
     st.session_state.Text_Process.prompt_map_template_preguntas = st.session_state.new_prompt
 

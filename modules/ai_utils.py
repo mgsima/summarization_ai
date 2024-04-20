@@ -1,8 +1,10 @@
+__import__('pysqlite3') 
+import sys 
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3') 
 # Bibliotecas estándar de Python
 import os
 import ast
 from typing import List
-
 # Manipulación de datos y cálculos numéricos
 import numpy as np
 import pandas as pd
@@ -58,7 +60,7 @@ class BookEmbeddingApp:
                 raise EnvironmentError("API key not found. Please set the OPENAI_API_KEY environment variable or pass it explicitly.")
                 
         openai.api_key = self.api_key
-        self.openai_client = OpenAI()
+        self.openai_client = OpenAI(openai_api_key=self.api_key)
 
         self.model_embeddings = model_embeddings 
         self.model_llm = model_llm
@@ -267,9 +269,6 @@ class TextProcessingSystem:
 
     def __init__(self, markdown_file_path=None, model_embeddings="text-embedding-3-large", model_llm='gpt-3.5-turbo-0125', api_key_user=None):
         self.markdown_file_path = markdown_file_path
-
-        self.model_embeddings = model_embeddings
-
         if api_key_user:
             self.api_key = api_key_user
         else:
@@ -280,10 +279,11 @@ class TextProcessingSystem:
                 raise EnvironmentError("API key not found. Please set the OPENAI_API_KEY environment variable or pass it explicitly.")
                 
         openai.api_key = self.api_key
+        self.model_embeddings = model_embeddings
         
         self.model = ChatOpenAI(api_key=self.api_key, temperature=0, model=model_llm)
         
-        self.embeddings = OpenAIEmbeddings(model=self.model_embeddings)
+        self.embeddings = OpenAIEmbeddings(model=self.model_embeddings, openai_api_key = self.api_key)
         self.num_clusters = None
 
         self.chunk_size = 1000
