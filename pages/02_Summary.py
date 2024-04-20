@@ -38,11 +38,10 @@ def dataframe_to_markdown():
 def generate_response(index):
     query = st.session_state.df_queries.at[index, 'questions']
 
-    if st.session_state.activate_rag:
-        response, information = st.session_state.rag.rag(query)
+    response, information = st.session_state.rag.rag(query)
 
-        st.session_state.df_queries.at[index, 'response'] = response
-        st.session_state.df_queries.at[index, 'information'] = information
+    st.session_state.df_queries.at[index, 'response'] = response
+    st.session_state.df_queries.at[index, 'information'] = information
 
 
 def rewrite_questions(i):

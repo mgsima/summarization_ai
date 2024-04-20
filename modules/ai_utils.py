@@ -42,7 +42,7 @@ import chromadb.utils.embedding_functions as embedding_functions
 
 class BookEmbeddingApp:
 
-    def __init__(self, file_path, model_embeddings="text-embedding-3-large", model_llm="gpt-3.5-turbo-0125", api_key_user=None):
+    def __init__(self, file_path, model_embeddings="text-embedding-3-large", model_llm="gpt-3.5-turbo-0125", api_key_user=None, csv_path_load=False):
         self.file_path = file_path
         self.df_book = None
         self.chroma_collection = None
@@ -51,6 +51,7 @@ class BookEmbeddingApp:
         self.chunk_size=2000 
         self.chunk_overlap=20
         self.csv_path='book_embeddings.csv'  
+        self.csv_path_load= csv_path_load
         self.collection_name='book'
         self.load_from_csv=False
 
@@ -141,8 +142,7 @@ class BookEmbeddingApp:
 
 
     def create_or_load_df(self):
-
-        if self.csv_path:
+        if self.csv_path_load:
             df = pd.read_csv(self.csv_path)
             df['embedding'] = df['embedding'].apply(ast.literal_eval)
         else:
@@ -198,20 +198,19 @@ class BookEmbeddingApp:
 
 
     def augment_multiple_query(self, query):
-        messages = [
-            {
-                "role": "system",
-                "content": self.prompt_augment_queries
-            },
-            {"role": "user", "content": query}
-        ]
 
-        response = self.openai_client.chat.completions.create(
-            model=self.model_llm,
-            messages=messages,
+        prompt = PromptTemplate(
+            template=self.prompt_augment_queries,
+            input_variables=['questions']
         )
-        content = response.choices[0].message.content
+
+        output_parser = StrOutputParser()
+
+        chain = prompt | self.model | output_parser
+
+        content = chain.invoke({'questions': query})
         content = content.split("\n")
+        # Mejorar la salida de esto 
         return content
 
 

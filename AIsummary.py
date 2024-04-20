@@ -76,6 +76,11 @@ def apply_rag_changes():
 def update_api_key():
     st.session_state.api_key = st.session_state.api_key_input
 
+def activate_rag_function():
+    if 'rag' not in st.session_state:
+        st.session_state['rag'] = BookEmbeddingApp(file_path=st.session_state.book_path, api_key_user=st.session_state.api_key, csv_path_load=False)
+        st.session_state.rag.init_chroma_collection()
+
 if not 'dataframe_csv_path' in st.session_state:
     st.session_state.dataframe_csv_path = 'dataframe_text.csv'
 
@@ -197,11 +202,10 @@ with col_book_path:
             value=st.session_state.book_path)
     st.session_state['book_path'] = book_path
 
-    activate_rag = st.toggle("Activate RAG", key="activate_rag")
-    if activate_rag:
-        if 'rag' not in st.session_state:
-            st.session_state['rag'] = BookEmbeddingApp(file_path=st.session_state.book_path, api_key_user=st.session_state.api_key)
-            st.session_state.rag.init_chroma_collection() 
+    st.toggle("Activate RAG", 
+              key="toggle_rag",
+              on_change=activate_rag_function)
+ 
 
 with col_rag:
     st.data_editor(st.session_state.rag_parameters,
