@@ -42,7 +42,7 @@ import chromadb.utils.embedding_functions as embedding_functions
 
 class BookEmbeddingApp:
 
-    def __init__(self, file_path, model_embeddings="text-embedding-3-large", model_llm="gpt-3.5-turbo-0125", api_key_user=None, csv_path_load=False):
+    def __init__(self, file_path, model_embeddings="text-embedding-3-large", model_llm="gpt-3.5-turbo-0125", api_key_user=None):
         self.file_path = file_path
         self.df_book = None
         self.chroma_collection = None
@@ -51,7 +51,6 @@ class BookEmbeddingApp:
         self.chunk_size=2000 
         self.chunk_overlap=20
         self.csv_path='book_embeddings.csv'  
-        self.csv_path_load= csv_path_load
         self.collection_name='book'
         self.load_from_csv=False
 
@@ -142,7 +141,7 @@ class BookEmbeddingApp:
 
 
     def create_or_load_df(self):
-        if self.csv_path_load:
+        if self.load_from_csv:
             df = pd.read_csv(self.csv_path)
             df['embedding'] = df['embedding'].apply(ast.literal_eval)
         else:
