@@ -78,7 +78,7 @@ def update_api_key():
 
 def activate_rag_function():
     if 'rag' not in st.session_state:
-        st.session_state['rag'] = BookEmbeddingApp(file_path=st.session_state.book_path, api_key_user=st.session_state.api_key, csv_path_load=False)
+        st.session_state['rag'] = BookEmbeddingApp(file_path=st.session_state.book_path, api_key_user=st.session_state.api_key)
         st.session_state.rag.init_chroma_collection()
 
 if not 'dataframe_csv_path' in st.session_state:
