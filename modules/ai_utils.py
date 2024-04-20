@@ -24,9 +24,6 @@ from bs4 import BeautifulSoup
 # Variables de entorno
 from dotenv import load_dotenv, find_dotenv
 
-# Bibliotecas y módulos relacionados con OpenAI
-import openai
-from openai import OpenAI
 
 # Funcionalidades específicas de langchain
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter, CharacterTextSplitter
@@ -49,6 +46,13 @@ class BookEmbeddingApp:
         self.file_path = file_path
         self.df_book = None
         self.chroma_collection = None
+        self.model_embeddings = model_embeddings 
+        self.model_llm = model_llm
+        self.chunk_size=2000 
+        self.chunk_overlap=20
+        self.csv_path='book_embeddings.csv'  
+        self.collection_name='book'
+        self.load_from_csv=False
 
         if api_key_user:
             self.api_key = api_key_user
@@ -59,16 +63,9 @@ class BookEmbeddingApp:
             except KeyError:
                 raise EnvironmentError("API key not found. Please set the OPENAI_API_KEY environment variable or pass it explicitly.")
                 
-        openai.api_key = self.api_key
-        self.openai_client = OpenAI(openai_api_key=self.api_key)
-
-        self.model_embeddings = model_embeddings 
-        self.model_llm = model_llm
-        self.chunk_size=2000 
-        self.chunk_overlap=20
-        self.csv_path='book_embeddings.csv'  
-        self.collection_name='book'
-        self.load_from_csv=False
+        self.model = ChatOpenAI(api_key=self.api_key, temperature=0, model=self.model_llm)
+        
+        
         # Prompts used:
 
         self.prompt_augment_queries = """ 
@@ -100,6 +97,14 @@ class BookEmbeddingApp:
                 
                 Recuerda, tu papel como asistente virtual no es solo informar, sino también educar e inspirar a aquellos que buscan mejorar 
                 sus habilidades en la gestión de proyectos y la implementación de Scrum.
+
+                Cuestión a desarrollar:
+                {questions}
+
+                Información para desarrollas la cuestión:
+                {information}
+
+
 
                 """
 
@@ -242,22 +247,17 @@ class BookEmbeddingApp:
     def rag(self, query):
         information = self.retrieve_documents(query)
 
-        messages = [
-            {
-                "role": "system",
-                "content": self.prompt_rag 
-            },
-            {
-                "role": "user", 
-                "content": f"Concepto: {query}. \n Informacion: {information}"
-            }
-            ]
-            
-        response = self.openai_client.chat.completions.create(
-            model=self.model_llm,
-            messages=messages,
+        prompt = PromptTemplate(
+            template=self.prompt_rag,
+            input_variables=['questions', 'information']
         )
-        content = response.choices[0].message.content
+
+        output_parser = StrOutputParser()
+
+        chain = prompt | self.model | output_parser
+
+        content = chain.invoke({'questions': query, 'information': information})
+
         return content, information
 
 class TextProcessingSystem:
@@ -269,6 +269,15 @@ class TextProcessingSystem:
 
     def __init__(self, markdown_file_path=None, model_embeddings="text-embedding-3-large", model_llm='gpt-3.5-turbo-0125', api_key_user=None):
         self.markdown_file_path = markdown_file_path
+        self.chunk_size = 1000
+        self.chunk_overlap=0
+        self.csv_path='csv_with_embeddings.csv'
+        self.question_csv_path="questions.csv"
+        self.model_embeddings = model_embeddings
+        self.model_llm = model_llm
+        self.num_clusters = None
+
+
         if api_key_user:
             self.api_key = api_key_user
         else:
@@ -278,18 +287,11 @@ class TextProcessingSystem:
             except KeyError:
                 raise EnvironmentError("API key not found. Please set the OPENAI_API_KEY environment variable or pass it explicitly.")
                 
-        openai.api_key = self.api_key
-        self.model_embeddings = model_embeddings
         
-        self.model = ChatOpenAI(api_key=self.api_key, temperature=0, model=model_llm)
         
+        self.model = ChatOpenAI(api_key=self.api_key, temperature=0, model=self.model_llm)
         self.embeddings = OpenAIEmbeddings(model=self.model_embeddings, openai_api_key = self.api_key)
-        self.num_clusters = None
 
-        self.chunk_size = 1000
-        self.chunk_overlap=0
-        self.csv_path='csv_with_embeddings.csv'
-        self.question_csv_path="questions.csv"
 
 
         # Este prompt recibe un grupo de textos y los tiene que unir para hacer preguntas.
